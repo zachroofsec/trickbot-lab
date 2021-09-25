@@ -1,0 +1,51 @@
+version: '3'
+networks:
+  internal:
+    driver: bridge 
+  external:
+    driver: bridge
+
+services:
+  victim:
+    image: zachroofsec/ps-trickbot-lab-suricata-arkime
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.3
+    hostname: elasticsearch
+    environment:
+      - discovery.type=single-node
+    networks: 
+      - internal
+
+  viewer:
+    image: zachroofsec/ps-trickbot-lab-suricata-arkime
+    hostname: viewer
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    environment:
+      - ARKIME_USER=arkime
+      - ARKIME_PSWD=arkime
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./log:/arkime/log
+      - ./import:/import
+      - ./arkime:/arkime/etc
+#       - ./scripts:/arkime/bin
+      - suricata:/suricata/logs
+      - ./suricata:/suricata/configs
+    networks:
+      - internal
+      - external
+    entrypoint: /arkime/bin/viewer.sh
+    ports:
+      - 8005:8005
+
+
+volumes:
+    suricata:
